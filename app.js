@@ -2,7 +2,7 @@
 
 const Homey = require('homey');
 const { HomeyAPI } = require('homey-api');
-const { sunAltitude } = require('./sun');
+const { sunAltitude, estimateLux } = require('./sun');
 
 const DEFAULTS = {
   enabled: true,
@@ -11,6 +11,8 @@ const DEFAULTS = {
   morningAngle: -3, // slukk når sola er over -3° om morgenen
   nightBreak: { enabled: false, off: '23:30', on: '06:00' },
   lux: { deviceId: null, threshold: 30 },
+  zones: [], // tom = alle rom (brukes bare til filtrering i innstillingene)
+  classes: ["light", "socket"],
 };
 
 const TICK_MS = 60 * 1000;
@@ -115,6 +117,11 @@ class OutdoorLightsApp extends Homey.App {
   }
 
   async tick(configChanged = false) {
+    await this.runAutomation(configChanged);
+    await this.updateStatusDevices().catch(this.error);
+  }
+
+  async runAutomation(configChanged) {
     const cfg = this.config;
     if (!cfg.enabled || !cfg.devices.length) return;
     if (Date.now() < this.pausedUntil) return;
@@ -135,7 +142,35 @@ class OutdoorLightsApp extends Homey.App {
     const failed = results.filter(r => r.status === 'rejected').length;
     this.addLog(`${on ? 'Slo på' : 'Slo av'} ${cfg.devices.length - failed} lys${reason === 'test' ? ' (test)' : ''}${failed ? `, ${failed} feilet` : ''}`);
     if (reason === 'auto') await this.triggerTurned.trigger({ on }).catch(this.error);
+    if (reason !== 'auto') this.updateStatusDevices().catch(this.error);
     return { ok: failed === 0, failed };
+  }
+
+  async setEnabled(enabled) {
+    this.homey.settings.set('config', { ...this.config, enabled });
+    this.addLog(enabled ? 'Automatikk slått på' : 'Automatikk slått av');
+  }
+
+  async lightsOn(cfg) {
+    const states = await Promise.all(cfg.devices.map(id => this.api.devices.getDevice({ id })
+      .then(d => d.capabilitiesObj?.onoff?.value === true).catch(() => false)));
+    return states.some(Boolean);
+  }
+
+  formatEvent(t) {
+    if (!t) return 'Ikke innen 36 t';
+    const tz = this.homey.clock.getTimezone();
+    const d = new Date(t);
+    const time = d.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+    const day = x => x.toLocaleDateString('nb-NO', { timeZone: tz });
+    return day(d) === day(new Date()) ? `I dag ${time}` : `I morgen ${time}`;
+  }
+
+  async updateStatusDevices() {
+    const devices = this.homey.drivers.getDriver('status').getDevices();
+    if (!devices.length) return;
+    const s = await this.getStatus();
+    await Promise.all(devices.map(d => d.update(s)));
   }
 
   addLog(msg) {
@@ -144,14 +179,22 @@ class OutdoorLightsApp extends Homey.App {
     this.log(msg);
   }
 
+  async listZones() {
+    const zones = await this.api.zones.getZones();
+    return Object.values(zones).map(z => ({ id: z.id, name: z.name, parent: z.parent || null }));
+  }
+
   async listLightDevices() {
-    const devices = await this.api.devices.getDevices();
+    const [devices, zones] = await Promise.all([this.api.devices.getDevices(), this.api.zones.getZones()]);
     return Object.values(devices)
+      .filter(d => d.driverId !== `homey:app:${this.homey.manifest.id}:status`)
       .filter(d => (d.capabilities || []).includes('onoff') || (d.capabilities || []).includes('measure_luminance'))
       .map(d => ({
         id: d.id,
         name: d.name,
-        zone: d.zoneName || '',
+        zoneId: d.zone,
+        zone: zones[d.zone]?.name || '',
+        class: d.virtualClass || d.class,
         icon: d.iconObj?.url || null,
         onoff: (d.capabilities || []).includes('onoff'),
         lux: (d.capabilities || []).includes('measure_luminance'),
@@ -182,15 +225,22 @@ class OutdoorLightsApp extends Homey.App {
     const midnight = now.valueOf() - this.localMinutes(now) * 60000;
     const curve = [];
     for (let m = 0; m <= 1440; m += 10) curve.push(+sunAltitude(new Date(midnight + m * 60000), lat, lng).toFixed(2));
+    const altitude = sunAltitude(now, lat, lng);
+    const forecast = this.forecast(cfg);
     return {
       lat, lng,
+      enabled: cfg.enabled,
+      lightsOn: await this.lightsOn(cfg),
+      estimatedLux: estimateLux(altitude),
+      nextOnText: this.formatEvent(forecast.find(e => e.on)?.t),
+      nextOffText: this.formatEvent(forecast.find(e => !e.on)?.t),
       timezone: this.homey.clock.getTimezone(),
-      altitude: sunAltitude(now, lat, lng),
+      altitude,
       dark: await this.isDark(now, cfg),
       lux: this.currentLux,
       wanted: this.lastWanted,
       pausedUntil: this.pausedUntil > Date.now() ? this.pausedUntil : null,
-      forecast: this.forecast(cfg),
+      forecast,
       curve,
       nowMinutes: this.localMinutes(now),
       log: this.lastLog,

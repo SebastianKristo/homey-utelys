@@ -3,37 +3,238 @@
   "version": "1.0.0",
   "compatibility": ">=5.0.0",
   "sdk": 3,
-  "platforms": ["local"],
-  "name": { "en": "Smart Outdoor Lights", "no": "Smart utelys" },
-  "description": { "en": "Turns outdoor lights on at dusk and off at dawn", "no": "Slår utelyset på i skumringen og av i grålysningen" },
-  "category": ["lights"],
-  "permissions": ["homey:manager:api", "homey:manager:geolocation"],
-  "images": { "small": "/assets/small.png", "large": "/assets/large.png", "xlarge": "/assets/xlarge.png" },
-  "author": { "name": "Sebastian", "email": "sebastian@kristo.no" },
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Smart Outdoor Lights",
+    "no": "Smart utelys"
+  },
+  "description": {
+    "en": "Turns outdoor lights on at dusk and off at dawn",
+    "no": "Slår utelyset på i skumringen og av i grålysningen"
+  },
+  "category": [
+    "lights"
+  ],
+  "permissions": [
+    "homey:manager:api",
+    "homey:manager:geolocation"
+  ],
+  "images": {
+    "small": "/assets/small.png",
+    "large": "/assets/large.png",
+    "xlarge": "/assets/xlarge.png"
+  },
+  "author": {
+    "name": "Sebastian",
+    "email": "sebastian@kristo.no"
+  },
   "brandColor": "#1f3b73",
   "api": {
-    "getDevices": { "method": "GET", "path": "/devices" },
-    "getStatus": { "method": "GET", "path": "/status" },
-    "test": { "method": "POST", "path": "/test" }
+    "getDevices": {
+      "method": "GET",
+      "path": "/devices"
+    },
+    "getStatus": {
+      "method": "GET",
+      "path": "/status"
+    },
+    "test": {
+      "method": "POST",
+      "path": "/test"
+    },
+    "zones": {
+      "method": "GET",
+      "path": "/zones"
+    }
   },
   "flow": {
     "triggers": [
       {
         "id": "lights_turned",
-        "title": { "no": "Utelyset ble slått på/av av automatikken", "en": "Outdoor lights switched by automation" },
-        "tokens": [{ "name": "on", "type": "boolean", "title": { "no": "På", "en": "On" } }]
+        "title": {
+          "no": "Utelyset ble slått på/av av automatikken",
+          "en": "Outdoor lights switched by automation"
+        },
+        "tokens": [
+          {
+            "name": "on",
+            "type": "boolean",
+            "title": {
+              "no": "På",
+              "en": "On"
+            }
+          }
+        ]
       }
     ],
     "conditions": [
-      { "id": "is_dark", "title": { "no": "Det er !{{mørkt|lyst}} ute", "en": "It is !{{dark|light}} outside" } }
+      {
+        "id": "is_dark",
+        "title": {
+          "no": "Det er !{{mørkt|lyst}} ute",
+          "en": "It is !{{dark|light}} outside"
+        }
+      }
     ],
     "actions": [
       {
         "id": "pause",
-        "title": { "no": "Sett automatikken på pause", "en": "Pause automation" },
-        "titleFormatted": { "no": "Sett automatikken på pause i [[minutes]] minutter", "en": "Pause automation for [[minutes]] minutes" },
-        "args": [{ "name": "minutes", "type": "number", "min": 1, "max": 1440, "placeholder": { "no": "60", "en": "60" } }]
+        "title": {
+          "no": "Sett automatikken på pause",
+          "en": "Pause automation"
+        },
+        "titleFormatted": {
+          "no": "Sett automatikken på pause i [[minutes]] minutter",
+          "en": "Pause automation for [[minutes]] minutes"
+        },
+        "args": [
+          {
+            "name": "minutes",
+            "type": "number",
+            "min": 1,
+            "max": 1440,
+            "placeholder": {
+              "no": "60",
+              "en": "60"
+            }
+          }
+        ]
       }
     ]
-  }
+  },
+  "capabilities": {
+    "automation_enabled": {
+      "type": "boolean",
+      "title": {
+        "no": "Automatikk",
+        "en": "Automation"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "toggle",
+      "icon": "/assets/cap_auto.svg"
+    },
+    "is_dark": {
+      "type": "boolean",
+      "title": {
+        "no": "Mørkt ute",
+        "en": "Dark outside"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/cap_moon.svg",
+      "insights": true,
+      "insightsTitleTrue": {
+        "no": "Ble mørkt",
+        "en": "Became dark"
+      },
+      "insightsTitleFalse": {
+        "no": "Ble lyst",
+        "en": "Became light"
+      }
+    },
+    "sun_altitude": {
+      "type": "number",
+      "title": {
+        "no": "Solhøyde",
+        "en": "Sun altitude"
+      },
+      "units": {
+        "en": "°"
+      },
+      "decimals": 1,
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/cap_sun.svg",
+      "insights": true
+    },
+    "next_on": {
+      "type": "string",
+      "title": {
+        "no": "Neste gang på",
+        "en": "Next on"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/cap_on.svg"
+    },
+    "next_off": {
+      "type": "string",
+      "title": {
+        "no": "Neste gang av",
+        "en": "Next off"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/cap_off.svg"
+    }
+  },
+  "drivers": [
+    {
+      "id": "status",
+      "name": {
+        "no": "Utelys-status",
+        "en": "Outdoor lights status"
+      },
+      "class": "light",
+      "capabilities": [
+        "onoff",
+        "automation_enabled",
+        "is_dark",
+        "measure_luminance",
+        "measure_luminance.sensor",
+        "sun_altitude",
+        "next_on",
+        "next_off"
+      ],
+      "capabilitiesOptions": {
+        "onoff": {
+          "title": {
+            "no": "Utelys",
+            "en": "Outdoor lights"
+          }
+        },
+        "measure_luminance": {
+          "title": {
+            "no": "Lys ute (beregnet)",
+            "en": "Outdoor light (estimated)"
+          }
+        },
+        "measure_luminance.sensor": {
+          "title": {
+            "no": "Lys ute (sensor)",
+            "en": "Outdoor light (sensor)"
+          }
+        }
+      },
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [],
+      "images": {
+        "small": "/drivers/status/assets/images/small.png",
+        "large": "/drivers/status/assets/images/large.png",
+        "xlarge": "/drivers/status/assets/images/xlarge.png"
+      },
+      "pair": [
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ]
+    }
+  ]
 }

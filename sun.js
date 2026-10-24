@@ -19,3 +19,23 @@ function sunAltitude(date, lat, lng) {
 }
 
 module.exports = { sunAltitude };
+
+// Anslått lysnivå ute (lux) ved klarvær, ut fra solhøyden. Interpolerer i log-skala
+// mellom kjente referanseverdier (fullmåne ≈ 0.1, borgerlig tusmørke ≈ 3, soloppgang ≈ 400, sol høyt ≈ 100 000).
+const LUX_TABLE = [[-18, 0.001], [-12, 0.01], [-9, 0.3], [-6, 3], [-3, 40], [0, 400],
+  [5, 4000], [10, 10000], [20, 30000], [30, 55000], [45, 80000], [60, 100000], [90, 120000]];
+
+function estimateLux(altitude) {
+  if (altitude <= LUX_TABLE[0][0]) return 0;
+  for (let i = 1; i < LUX_TABLE.length; i++) {
+    const [a1, l1] = LUX_TABLE[i - 1];
+    const [a2, l2] = LUX_TABLE[i];
+    if (altitude <= a2) {
+      const f = (altitude - a1) / (a2 - a1);
+      return 10 ** (Math.log10(l1) + f * (Math.log10(l2) - Math.log10(l1)));
+    }
+  }
+  return 120000;
+}
+
+module.exports.estimateLux = estimateLux;
