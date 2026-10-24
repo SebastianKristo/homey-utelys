@@ -5,363 +5,426 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
   <style>
-    /* Egne klasser overalt (ingen label/h1/input-checkbox), så Homeys innebygde stilark ikke overstyrer designet. */
-    :root {
-      --bg:#eef2fb; --card:#ffffff; --soft:#f3f6fd; --line:#e2e8f5; --txt:#141b2d; --mut:#6b7794;
-      --acc:#f5a623; --accSoft:#fff4df; --blue:#3d6bff; --blueSoft:#e8eeff; --ok:#1fb874; --bad:#e5484d;
-      --night:#1b2547; --shadow:0 1px 2px rgba(20,27,45,.04), 0 6px 20px rgba(20,27,45,.06);
+    /* Alt ligger under #app og bruker div-er i stedet for button/label, slik at Homeys eget stilark ikke tar over. */
+    #app {
+      --bg:#f4f6fb; --card:#ffffff; --soft:#f1f4fa; --line:#e4e9f2; --txt:#16203a; --mut:#6c7893;
+      --acc:#f5a524; --accSoft:#fff3dc; --pri:#3b6cf6; --priSoft:#e9efff; --ok:#22b573; --bad:#e5484d;
+      --sky:#dfe9ff; --night:#1d2850;
     }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg:#0d1324; --card:#161f38; --soft:#1d2848; --line:#26335a; --txt:#eef2fb; --mut:#93a0c2;
-        --accSoft:#3a2d12; --blueSoft:#1f2d5c; --night:#0a1020; --shadow:none; }
+    #app.dark {
+      --bg:#0f1422; --card:#181f33; --soft:#20293f; --line:#2a3550; --txt:#eef2fb; --mut:#94a0bd;
+      --accSoft:#3b2d12; --priSoft:#1f2d5a; --sky:#26355f; --night:#0b1020;
     }
-    html, body { background:var(--bg) !important; color:var(--txt) !important; margin:0; }
-    body { padding:14px 14px 90px !important; font:15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important; }
-    .u * { box-sizing:border-box; text-transform:none; letter-spacing:normal; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px; margin-bottom:12px; box-shadow:var(--shadow); }
-    .title { font-size:13px; font-weight:600; color:var(--mut); margin:0 0 12px; display:flex; align-items:center; gap:8px; }
-    .step { width:22px; height:22px; border-radius:50%; background:var(--blueSoft); color:var(--blue); display:inline-grid; place-items:center; font-size:12px; font-weight:700; }
-    .title .count { margin-left:auto; font-weight:500; }
+    html, body { margin:0 !important; padding:0 !important; background:var(--page-bg, #f4f6fb) !important; }
+    #app { background:var(--bg); color:var(--txt); min-height:100vh; padding:14px 14px 40px; box-sizing:border-box;
+      font:15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color:transparent; }
+    #app * { box-sizing:border-box; text-transform:none; letter-spacing:normal; font-family:inherit; }
+    #app .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px; margin:0 0 12px; }
+    #app .hd { display:flex; align-items:center; gap:10px; margin:0 0 4px; }
+    #app .hd .ttl { font-size:16px; font-weight:700; flex:1; }
+    #app .hint { color:var(--mut); font-size:13px; margin:0 0 12px; }
+    #app .link { color:var(--pri); font-weight:600; font-size:14px; cursor:pointer; }
 
-    /* Hero */
-    .hero { display:flex; align-items:center; gap:14px; }
-    .bulb { width:58px; height:58px; border-radius:18px; display:grid; place-items:center; font-size:28px; background:var(--soft); transition:.3s; flex:none; }
-    .bulb.on { background:var(--acc); box-shadow:0 0 0 6px var(--accSoft), 0 8px 30px rgba(245,166,35,.45); }
-    .hero .h { font-size:20px; font-weight:700; }
-    .hero .s { color:var(--mut); font-size:13px; }
-    .stats { display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-top:14px; }
-    .stat { background:var(--soft); border-radius:14px; padding:10px 12px; }
-    .stat .k { color:var(--mut); font-size:12px; }
-    .stat .v { font-size:19px; font-weight:700; margin-top:2px; }
-    .stat .v small { font-size:12px; font-weight:500; color:var(--mut); }
-    .chart { width:100%; height:150px; display:block; margin-top:12px; border-radius:14px; overflow:hidden; }
+    /* Status */
+    #app .hero { display:flex; align-items:center; gap:14px; }
+    #app .bulb { width:56px; height:56px; border-radius:18px; display:grid; place-items:center; background:var(--soft); flex:none; transition:.3s; }
+    #app .bulb svg { width:28px; height:28px; }
+    #app .bulb.on { background:var(--acc); box-shadow:0 0 0 6px var(--accSoft); }
+    #app .h1 { font-size:20px; font-weight:700; line-height:1.2; }
+    #app .sub { color:var(--mut); font-size:13px; margin-top:2px; }
+    #app .stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
+    #app .stat { background:var(--soft); border-radius:14px; padding:10px 12px; }
+    #app .stat .k { color:var(--mut); font-size:12px; }
+    #app .stat .v { font-size:20px; font-weight:700; margin-top:2px; white-space:nowrap; }
+    #app .stat .v i { font-style:normal; font-size:12px; font-weight:500; color:var(--mut); }
+    #app .chart { display:block; width:100%; height:120px; margin-top:12px; border-radius:14px; }
 
-    /* Rader og brytere */
-    .row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--line); }
-    .row:first-of-type { border-top:0; padding-top:2px; }
-    .row .l { flex:1; min-width:0; }
-    .row .l b { font-weight:600; display:block; }
-    .row .l small { display:block; color:var(--mut); font-size:12px; }
-    .tg { all:unset; position:relative; width:50px; height:30px; border-radius:30px; background:var(--line); cursor:pointer; flex:none; transition:background .2s; }
-    .tg::after { content:""; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); transition:transform .2s; }
-    .tg[aria-checked="true"] { background:var(--ok); }
-    .tg[aria-checked="true"]::after { transform:translateX(20px); }
+    /* Rader, bryter */
+    #app .row { display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line); }
+    #app .row.first { border-top:0; padding-top:4px; }
+    #app .row .l { flex:1; min-width:0; }
+    #app .row .l .t { font-weight:600; }
+    #app .row .l .d { color:var(--mut); font-size:13px; }
+    #app .tg { position:relative; width:50px; height:30px; border-radius:15px; background:var(--line); cursor:pointer; flex:none; transition:background .2s; }
+    #app .tg::after { content:""; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .2s; }
+    #app .tg.on { background:var(--ok); }
+    #app .tg.on::after { transform:translateX(20px); }
 
-    /* Chips */
-    .chips { display:flex; flex-wrap:wrap; gap:8px; }
-    .chip { all:unset; cursor:pointer; padding:7px 12px; border-radius:999px; background:var(--soft); border:1px solid var(--line); font-size:13px; font-weight:500; color:var(--txt); }
-    .chip .n { color:var(--mut); margin-left:4px; font-size:12px; }
-    .chip.on { background:var(--blue); border-color:var(--blue); color:#fff; }
-    .chip.on .n { color:rgba(255,255,255,.75); }
+    /* Segmentvalg for tidspunkt */
+    #app .seg { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin:8px 0 4px; }
+    #app .opt { background:var(--soft); border:1.5px solid transparent; border-radius:14px; padding:10px 6px; text-align:center; cursor:pointer; }
+    #app .opt .n { font-size:13px; font-weight:600; }
+    #app .opt .tm { font-size:17px; font-weight:700; margin-top:2px; }
+    #app .opt .dg { font-size:11px; color:var(--mut); }
+    #app .opt.on { border-color:var(--pri); background:var(--priSoft); }
+    #app .opt.on .tm { color:var(--pri); }
+    #app .fine { display:flex; align-items:center; justify-content:center; gap:14px; color:var(--mut); font-size:13px; margin:6px 0 2px; }
+    #app .step { width:32px; height:32px; border-radius:10px; background:var(--soft); display:grid; place-items:center; font-size:18px; font-weight:700; color:var(--txt); cursor:pointer; user-select:none; }
 
-    /* Enheter */
-    .dev { display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--line); }
-    .dev:first-child { border-top:0; }
-    .dev .ic { width:36px; height:36px; border-radius:12px; background:var(--soft); display:grid; place-items:center; flex:none; }
-    .dev .ic img { width:20px; height:20px; opacity:.75; }
-    @media (prefers-color-scheme: dark) { .dev .ic img { filter:invert(1); } }
-    .dev .l { flex:1; min-width:0; }
-    .dev .l b { font-weight:600; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .dev .l small { color:var(--mut); font-size:12px; display:flex; align-items:center; gap:6px; }
-    .dot { width:7px; height:7px; border-radius:50%; background:var(--line); display:inline-block; }
-    .dot.on { background:var(--acc); box-shadow:0 0 6px var(--acc); }
-    .empty { color:var(--mut); font-size:13px; padding:6px 0; }
-    .search { all:unset; display:block; width:100%; box-sizing:border-box; background:var(--soft); border:1px solid var(--line); border-radius:12px; padding:9px 12px; margin-bottom:6px; font-size:14px; color:var(--txt); }
+    /* Utelys */
+    #app .sel { display:flex; flex-wrap:wrap; gap:6px; }
+    #app .pill { display:inline-flex; align-items:center; gap:6px; background:var(--soft); border-radius:999px; padding:6px 12px; font-size:13px; font-weight:500; }
+    #app .dot { width:7px; height:7px; border-radius:50%; background:var(--mut); opacity:.4; flex:none; }
+    #app .dot.on { background:var(--acc); opacity:1; box-shadow:0 0 6px var(--acc); }
+    #app .picker { margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+    #app .lbl { font-size:12px; font-weight:600; color:var(--mut); margin:12px 0 8px; }
+    #app .lbl:first-child { margin-top:0; }
+    #app .chips { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+    #app .chips::-webkit-scrollbar { display:none; }
+    #app .chip { flex:none; padding:7px 12px; border-radius:999px; background:var(--soft); font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap; user-select:none; }
+    #app .chip span { color:var(--mut); margin-left:4px; font-size:12px; }
+    #app .chip.on { background:var(--pri); color:#fff; }
+    #app .chip.on span { color:rgba(255,255,255,.75); }
+    #app .dev { display:flex; align-items:center; gap:12px; padding:9px 0; border-top:1px solid var(--line); }
+    #app .dev:first-child { border-top:0; }
+    #app .dev .l { flex:1; min-width:0; }
+    #app .dev .l .t { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #app .dev .l .d { color:var(--mut); font-size:12px; display:flex; align-items:center; gap:6px; }
+    #app .empty { color:var(--mut); font-size:13px; padding:8px 0; }
 
-    /* Glidebrytere og felt */
-    .slider { display:flex; justify-content:space-between; align-items:baseline; margin-top:4px; }
-    .slider .val { font-weight:700; color:var(--acc); }
-    input[type=range].rng { width:100%; accent-color:var(--acc); margin:8px 0 4px; }
-    .presets { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
-    .presets .chip { padding:5px 10px; font-size:12px; }
-    .field { all:unset; background:var(--soft); border:1px solid var(--line); border-radius:10px; padding:7px 10px; font-size:14px; color:var(--txt); }
-    select.field { max-width:190px; }
+    /* Felter */
+    #app .field { -webkit-appearance:none; appearance:none; background:var(--soft) !important; color:var(--txt) !important; border:1px solid var(--line) !important;
+      border-radius:10px !important; padding:8px 10px !important; font:inherit !important; font-size:14px !important; height:auto !important; margin:0 !important; width:auto; box-shadow:none !important; }
+    #app .search { width:100%; margin-top:10px !important; }
+    #app select.field { max-width:170px; padding-right:28px !important;
+      background-image:linear-gradient(45deg, transparent 50%, var(--mut) 50%), linear-gradient(135deg, var(--mut) 50%, transparent 50%) !important;
+      background-position:calc(100% - 15px) 52%, calc(100% - 10px) 52% !important; background-size:5px 5px !important; background-repeat:no-repeat !important; }
 
-    .btns { display:flex; gap:8px; }
-    .btn { all:unset; cursor:pointer; flex:1; text-align:center; border-radius:14px; padding:12px; font-weight:600; font-size:15px; background:var(--soft); color:var(--txt); border:1px solid var(--line); }
-    .savebar { position:fixed; left:0; right:0; bottom:0; padding:12px 14px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(transparent, var(--bg) 30%); }
-    .savebar .btn { display:block; width:100%; box-sizing:border-box; background:var(--blue); color:#fff; border:0; box-shadow:0 6px 20px rgba(61,107,255,.35); }
-    .savebar .btn.dirty::after { content:" •"; }
-    .log div { font-size:13px; padding:5px 0; color:var(--mut); border-top:1px solid var(--line); }
-    .log div:first-child { border-top:0; }
-    .log b { color:var(--txt); font-weight:600; margin-right:6px; }
-    .toast { position:fixed; left:50%; top:14px; transform:translate(-50%, -80px); background:var(--ok); color:#fff; padding:8px 16px; border-radius:999px; transition:.3s; font-weight:600; z-index:9; }
-    .toast.show { transform:translate(-50%, 0); }
-    .hidden { display:none !important; }
-    .pos { color:var(--mut); font-size:12px; text-align:center; margin-top:4px; }
+    #app .btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    #app .btn { text-align:center; border-radius:14px; padding:12px; font-weight:600; background:var(--soft); cursor:pointer; user-select:none; }
+    #app .btn:active, #app .chip:active, #app .opt:active, #app .step:active { opacity:.7; }
+    #app .log .e { font-size:13px; padding:6px 0; color:var(--mut); border-top:1px solid var(--line); }
+    #app .log .e:first-child { border-top:0; }
+    #app .log b { color:var(--txt); font-weight:600; margin-right:6px; }
+    #app .foot { color:var(--mut); font-size:12px; text-align:center; margin-top:6px; }
+    #app .toast { position:fixed; left:50%; bottom:20px; transform:translate(-50%, 80px); background:var(--txt); color:var(--card); padding:8px 16px; border-radius:999px; font-size:14px; font-weight:600; transition:transform .3s; z-index:9; }
+    #app .toast.show { transform:translate(-50%, 0); }
+    #app .hidden { display:none !important; }
   </style>
 </head>
-<body class="u">
+<body>
+<div id="app">
 
+  <!-- Status -->
   <div class="card">
     <div class="hero">
-      <div class="bulb" id="bulb">💡</div>
-      <div><div class="h" id="stateTxt">Laster …</div><div class="s" id="sunTxt"></div></div>
+      <div class="bulb" id="bulb"><svg viewBox="0 0 24 24"><path id="bulbPath" d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2zM9 19h6v2H9z"/></svg></div>
+      <div><div class="h1" id="stateTxt">Laster …</div><div class="sub" id="sunTxt"></div></div>
     </div>
     <div class="stats">
-      <div class="stat"><div class="k">Neste gang på</div><div class="v" id="nextOn">–</div></div>
-      <div class="stat"><div class="k">Neste gang av</div><div class="v" id="nextOff">–</div></div>
-      <div class="stat"><div class="k">Lys ute (beregnet)</div><div class="v" id="estLux">–</div></div>
-      <div class="stat"><div class="k">Lys ute (sensor)</div><div class="v" id="senLux">–</div></div>
+      <div class="stat"><div class="k">Tennes</div><div class="v" id="nextOn">–</div></div>
+      <div class="stat"><div class="k">Slukkes</div><div class="v" id="nextOff">–</div></div>
+      <div class="stat"><div class="k">Lys ute nå</div><div class="v" id="estLux">–</div></div>
+      <div class="stat"><div class="k" id="sensK">Lyssensor</div><div class="v" id="senLux">–</div></div>
     </div>
-    <svg class="chart" id="chart" viewBox="0 0 300 150" preserveAspectRatio="none"></svg>
+    <svg class="chart" id="chart" viewBox="0 0 300 120" preserveAspectRatio="none"></svg>
   </div>
 
+  <!-- Automatikk -->
   <div class="card">
-    <div class="row"><div class="l"><b>Automatikk</b><small>Slå av for å styre utelyset manuelt</small></div>
-      <button class="tg" role="switch" id="enabled"></button></div>
+    <div class="row first"><div class="l"><div class="t">Automatisk utelys</div><div class="d">Tenner i skumringen og slukker i grålysningen</div></div>
+      <div class="tg" id="enabled"></div></div>
   </div>
 
+  <!-- Utelys -->
   <div class="card">
-    <div class="title"><span class="step">1</span>Velg rom</div>
-    <div class="chips" id="zones"><span class="empty">Laster rom …</span></div>
-  </div>
-
-  <div class="card">
-    <div class="title"><span class="step">2</span>Type enheter</div>
-    <div class="chips" id="classes"></div>
-  </div>
-
-  <div class="card">
-    <div class="title"><span class="step">3</span>Velg utelys<span class="count" id="selCount"></span></div>
-    <input class="search" id="search" placeholder="Søk etter enhet …">
-    <div id="devices"><div class="empty">Laster enheter …</div></div>
-  </div>
-
-  <div class="card">
-    <div class="title">🌇 Når skal lyset styres?</div>
-    <div class="slider"><b>Tenn om kvelden</b><span class="val" id="eveningVal"></span></div>
-    <input type="range" class="rng" id="eveningAngle" min="-9" max="3" step="0.5">
-    <div class="presets" data-target="eveningAngle">
-      <button class="chip" data-v="0">Solnedgang</button><button class="chip" data-v="-3">Skumring</button><button class="chip" data-v="-6">Borgerlig tusmørke</button>
-    </div>
-    <div class="slider"><b>Slukk om morgenen</b><span class="val" id="morningVal"></span></div>
-    <input type="range" class="rng" id="morningAngle" min="-9" max="3" step="0.5">
-    <div class="presets" data-target="morningAngle">
-      <button class="chip" data-v="-6">Borgerlig tusmørke</button><button class="chip" data-v="-3">Grålysning</button><button class="chip" data-v="0">Soloppgang</button>
+    <div class="hd"><div class="ttl">Utelys</div><div class="link" id="editBtn">Endre</div></div>
+    <div class="hint" id="selHint">Ingen lys valgt ennå.</div>
+    <div class="sel" id="selected"></div>
+    <div class="picker hidden" id="picker">
+      <div class="lbl">Rom</div>
+      <div class="chips" id="zones"></div>
+      <div class="lbl">Type</div>
+      <div class="chips" id="classes"></div>
+      <input class="field search" id="search" placeholder="Søk …">
+      <div id="devices" style="margin-top:6px"></div>
     </div>
   </div>
 
+  <!-- Tidspunkt -->
   <div class="card">
-    <div class="row"><div class="l"><b>🌙 Nattpause</b><small>Slukker om natten og tenner igjen om morgenen hvis det fortsatt er mørkt</small></div>
-      <button class="tg" role="switch" id="nbEnabled"></button></div>
+    <div class="hd"><div class="ttl">Tenn om kvelden</div></div>
+    <div class="seg" data-key="eveningAngle" data-dir="evening">
+      <div class="opt" data-v="0"><div class="n">Solnedgang</div><div class="tm">–</div><div class="dg">0°</div></div>
+      <div class="opt" data-v="-3"><div class="n">Skumring</div><div class="tm">–</div><div class="dg">−3°</div></div>
+      <div class="opt" data-v="-6"><div class="n">Mørkt</div><div class="tm">–</div><div class="dg">−6°</div></div>
+    </div>
+    <div class="fine" data-key="eveningAngle"><div class="step" data-d="0.5">−</div><span>Finjuster: <b class="cur"></b></span><div class="step" data-d="-0.5">+</div></div>
+  </div>
+
+  <div class="card">
+    <div class="hd"><div class="ttl">Slukk om morgenen</div></div>
+    <div class="seg" data-key="morningAngle" data-dir="morning">
+      <div class="opt" data-v="-6"><div class="n">Gry</div><div class="tm">–</div><div class="dg">−6°</div></div>
+      <div class="opt" data-v="-3"><div class="n">Grålysning</div><div class="tm">–</div><div class="dg">−3°</div></div>
+      <div class="opt" data-v="0"><div class="n">Soloppgang</div><div class="tm">–</div><div class="dg">0°</div></div>
+    </div>
+    <div class="fine" data-key="morningAngle"><div class="step" data-d="-0.5">−</div><span>Finjuster: <b class="cur"></b></span><div class="step" data-d="0.5">+</div></div>
+  </div>
+
+  <!-- Nattpause og sensor -->
+  <div class="card">
+    <div class="row first"><div class="l"><div class="t">Nattpause</div><div class="d">Slukk om natten, tenn igjen om morgenen hvis det er mørkt</div></div>
+      <div class="tg" id="nbEnabled"></div></div>
     <div id="nbTimes">
-      <div class="row"><div class="l"><b>Slukk kl.</b></div><input type="time" class="field" id="nbOff"></div>
-      <div class="row"><div class="l"><b>Tenn igjen kl.</b></div><input type="time" class="field" id="nbOn"></div>
+      <div class="row"><div class="l"><div class="t">Slukk</div></div><input type="time" class="field" id="nbOff"></div>
+      <div class="row"><div class="l"><div class="t">Tenn igjen</div></div><input type="time" class="field" id="nbOn"></div>
     </div>
-  </div>
-
-  <div class="card">
-    <div class="row"><div class="l"><b>☁️ Lyssensor</b><small>Tenner tidligere på mørke, overskyede dager</small></div>
+    <div class="row"><div class="l"><div class="t">Lyssensor</div><div class="d">Tenner tidligere på mørke dager</div></div>
       <select class="field" id="luxDevice"><option value="">Ingen</option></select></div>
-    <div class="row" id="luxRow"><div class="l"><b>Mørkt under</b><small id="luxNow"></small></div>
-      <span><input type="number" class="field" id="luxThreshold" min="1" max="1000" style="width:70px"> lux</span></div>
+    <div class="row" id="luxRow"><div class="l"><div class="t">Mørkt under</div><div class="d" id="luxNow"></div></div>
+      <input type="number" class="field" id="luxThreshold" min="1" max="1000" style="width:76px"> <span style="color:var(--mut)">lux</span></div>
   </div>
 
+  <!-- Test og logg -->
   <div class="card">
-    <div class="title">Test valgte lys</div>
-    <div class="btns"><button class="btn" id="testOn">💡 Slå på</button><button class="btn" id="testOff">⚫ Slå av</button></div>
+    <div class="hd"><div class="ttl">Test</div></div>
+    <div class="hint">Slår de valgte lysene på eller av nå.</div>
+    <div class="btns"><div class="btn" id="testOn">Slå på</div><div class="btn" id="testOff">Slå av</div></div>
   </div>
+  <div class="card">
+    <div class="hd"><div class="ttl">Siste hendelser</div></div>
+    <div class="log" id="log"></div>
+  </div>
+  <div class="foot" id="pos"></div>
 
-  <div class="card"><div class="title">Logg</div><div class="log" id="log">–</div></div>
-  <div class="pos" id="pos"></div>
-
-  <div class="savebar"><button class="btn" id="save">Lagre</button></div>
   <div class="toast" id="toast"></div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
+const app = $('app');
 const DEFAULTS = { enabled: true, devices: [], eveningAngle: -3, morningAngle: -3, zones: [], classes: ['light', 'socket'],
   nightBreak: { enabled: false, off: '23:30', on: '06:00' }, lux: { deviceId: null, threshold: 30 } };
 const CLASSES = [
-  { id: 'light', name: '💡 Lys', match: c => c === 'light' },
-  { id: 'socket', name: '🔌 Stikkontakter', match: c => c === 'socket' },
-  { id: 'switch', name: '🎚️ Brytere', match: c => ['button', 'switch'].includes(c) },
-  { id: 'other', name: '⚙️ Annet', match: c => !['light', 'socket', 'button', 'switch'].includes(c) },
+  { id: 'light', name: 'Lys', match: c => c === 'light' },
+  { id: 'socket', name: 'Stikkontakter', match: c => c === 'socket' },
+  { id: 'switch', name: 'Brytere', match: c => ['button', 'switch'].includes(c) },
+  { id: 'other', name: 'Annet', match: c => !['light', 'socket', 'button', 'switch'].includes(c) },
 ];
-let H, cfg, tz, allDevices = [], allZones = [], lastStatus;
+let H, cfg, tz, devices = [], zones = [], status;
+
+// ---------- tema: følg Homey-appen ----------
+function applyTheme() {
+  const homeyDark = document.documentElement.classList.contains('homey-dark-mode') || document.body.classList.contains('homey-dark-mode');
+  const dark = homeyDark || matchMedia('(prefers-color-scheme: dark)').matches;
+  app.classList.toggle('dark', dark);
+  document.documentElement.style.setProperty('--page-bg', dark ? '#0f1422' : '#f4f6fb');
+}
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, subtree: false });
 
 // ---------- hjelpere ----------
-const fmtTime = t => new Date(t).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', timeZone: tz });
-const sameDay = (a, b) => new Date(a).toLocaleDateString('nb-NO', { timeZone: tz }) === new Date(b).toLocaleDateString('nb-NO', { timeZone: tz });
-const fmtEvent = t => (sameDay(t, Date.now()) ? '' : '<small>i morgen </small>') + fmtTime(t);
-const fmtLux = v => v == null ? '–' : v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}<small> k lux</small>` : `${v < 10 ? v.toFixed(1) : Math.round(v)}<small> lux</small>`;
-const angleTxt = v => (v > 0 ? '+' : '') + Number(v).toFixed(1) + '°';
-const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const api = (m, p, b) => new Promise((res, rej) => H.api(m, p, b || {}, (e, r) => e ? rej(e) : res(r)));
-function toast(msg, bad) { const t = $('toast'); t.textContent = msg; t.style.background = bad ? 'var(--bad)' : 'var(--ok)'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800); }
-function dirty() { $('save').classList.add('dirty'); }
-const isOn = el => el.getAttribute('aria-checked') === 'true';
-function setTg(el, v) { el.setAttribute('aria-checked', v ? 'true' : 'false'); }
-document.addEventListener('click', e => {
-  const tg = e.target.closest('.tg'); if (!tg) return;
-  setTg(tg, !isOn(tg)); tg.dispatchEvent(new Event('change', { bubbles: true })); dirty();
-});
-
-// ---------- rom ----------
-function zoneDeviceCount(zid) { return allDevices.filter(d => d.onoff && d.zoneId === zid).length; }
-function renderZones() {
-  const used = allZones.filter(z => zoneDeviceCount(z.id) > 0).sort((a, b) => a.name.localeCompare(b.name, 'no'));
-  const all = cfg.zones.length === 0;
-  $('zones').innerHTML = `<button class="chip ${all ? 'on' : ''}" data-z="">Alle rom<span class="n">${allDevices.filter(d => d.onoff).length}</span></button>` +
-    used.map(z => `<button class="chip ${cfg.zones.includes(z.id) ? 'on' : ''}" data-z="${z.id}">${esc(z.name)}<span class="n">${zoneDeviceCount(z.id)}</span></button>`).join('');
+const fmtTime = t => new Date(t).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+const dayKey = t => new Date(t).toLocaleDateString('nb-NO', { timeZone: tz });
+const fmtEvent = t => (dayKey(t) === dayKey(Date.now()) ? '' : '<i>i morgen </i>') + fmtTime(t);
+const minToTxt = m => m == null ? '–' : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}`;
+const deg = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1).replace('.0', '') + '°';
+function fmtLux(v) {
+  if (v == null) return '–';
+  if (v >= 1000) return `${Math.round(v / 1000)}<i> 000 lux</i>`;
+  return `${v < 10 ? v.toFixed(1).replace('.', ',') : Math.round(v)}<i> lux</i>`;
 }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1600); }
+
+// Lagrer automatisk kort tid etter siste endring
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => H.set('config', cfg, err => {
+    if (err) return toast('Kunne ikke lagre');
+    toast('Lagret'); setTimeout(refreshStatus, 700);
+  }), 400);
+}
+
+// Klokkeslett for når sola passerer en vinkel i dag, ut fra dagens kurve (10-min oppløsning)
+function crossing(angle, dir) {
+  if (!status) return null;
+  const c = status.curve;
+  const peak = c.indexOf(Math.max(...c));
+  const range = dir === 'evening' ? [peak, c.length - 1] : [0, peak];
+  for (let i = range[0]; i < range[1]; i++) {
+    const a = c[i], b = c[i + 1];
+    if (dir === 'evening' ? (a >= angle && b < angle) : (a <= angle && b > angle)) return (i + (angle - a) / (b - a)) * 10;
+  }
+  return null;
+}
+
+// ---------- tidspunkt ----------
+function renderTimes() {
+  document.querySelectorAll('.seg').forEach(seg => {
+    const v = cfg[seg.dataset.key];
+    seg.querySelectorAll('.opt').forEach(o => {
+      o.classList.toggle('on', Number(o.dataset.v) === v);
+      o.querySelector('.tm').textContent = minToTxt(crossing(Number(o.dataset.v), seg.dataset.dir));
+    });
+  });
+  document.querySelectorAll('.fine').forEach(f => {
+    const key = f.dataset.key, dir = key === 'eveningAngle' ? 'evening' : 'morning';
+    f.querySelector('.cur').textContent = `${minToTxt(crossing(cfg[key], dir))} (${deg(cfg[key])})`;
+  });
+}
+document.querySelectorAll('.seg .opt').forEach(o => o.addEventListener('click', () => {
+  cfg[o.parentElement.dataset.key] = Number(o.dataset.v); renderTimes(); drawChart(); save();
+}));
+document.querySelectorAll('.fine .step').forEach(s => s.addEventListener('click', () => {
+  const key = s.parentElement.dataset.key;
+  cfg[key] = Math.max(-9, Math.min(3, cfg[key] + Number(s.dataset.d))); renderTimes(); drawChart(); save();
+}));
+
+// ---------- brytere ----------
+function bindToggle(id, get, set) {
+  const el = $(id);
+  el.classList.toggle('on', get());
+  el.addEventListener('click', () => { set(!get()); el.classList.toggle('on', get()); renderMisc(); save(); });
+}
+
+function renderMisc() {
+  $('nbTimes').classList.toggle('hidden', !cfg.nightBreak.enabled);
+  $('luxRow').classList.toggle('hidden', !cfg.lux.deviceId);
+}
+
+// ---------- utelys ----------
+const devById = id => devices.find(d => d.id === id);
+function renderSelected() {
+  const sel = cfg.devices.map(devById).filter(Boolean);
+  $('selHint').textContent = sel.length ? `${sel.length} ${sel.length === 1 ? 'enhet styres' : 'enheter styres'} automatisk.` : 'Ingen lys valgt ennå – trykk Endre.';
+  $('selected').innerHTML = sel.map(d => `<span class="pill"><span class="dot ${d.on ? 'on' : ''}"></span>${esc(d.name)}</span>`).join('');
+}
+function renderPicker() {
+  const switchable = devices.filter(d => d.onoff);
+  const inZone = d => !cfg.zones.length || cfg.zones.includes(d.zoneId);
+  const inClass = d => CLASSES.some(c => cfg.classes.includes(c.id) && c.match(d.class));
+  const usedZones = zones.map(z => ({ ...z, n: switchable.filter(d => d.zoneId === z.id && inClass(d)).length }))
+    .filter(z => z.n).sort((a, b) => a.name.localeCompare(b.name, 'no'));
+  $('zones').innerHTML = `<div class="chip ${cfg.zones.length ? '' : 'on'}" data-z="">Alle</div>` +
+    usedZones.map(z => `<div class="chip ${cfg.zones.includes(z.id) ? 'on' : ''}" data-z="${z.id}">${esc(z.name)}<span>${z.n}</span></div>`).join('');
+  $('classes').innerHTML = CLASSES.map(c => {
+    const n = switchable.filter(d => c.match(d.class) && inZone(d)).length;
+    return `<div class="chip ${cfg.classes.includes(c.id) ? 'on' : ''}" data-c="${c.id}">${c.name}<span>${n}</span></div>`;
+  }).join('');
+  const q = $('search').value.trim().toLowerCase();
+  const list = switchable.filter(d => (q ? (d.name + ' ' + d.zone).toLowerCase().includes(q) : inZone(d) && inClass(d)))
+    .sort((a, b) => (cfg.devices.includes(b.id) - cfg.devices.includes(a.id)) || a.name.localeCompare(b.name, 'no'));
+  $('devices').innerHTML = list.length ? list.map(d => `
+    <div class="dev">
+      <div class="l"><div class="t">${esc(d.name)}</div><div class="d"><span class="dot ${d.on ? 'on' : ''}"></span>${esc(d.zone || 'Uten rom')}</div></div>
+      <div class="tg ${cfg.devices.includes(d.id) ? 'on' : ''}" data-dev="${d.id}"></div>
+    </div>`).join('') : '<div class="empty">Ingen enheter her.</div>';
+}
+$('editBtn').addEventListener('click', () => {
+  const open = $('picker').classList.toggle('hidden') === false;
+  $('editBtn').textContent = open ? 'Ferdig' : 'Endre';
+  if (open) renderPicker();
+});
 $('zones').addEventListener('click', e => {
   const c = e.target.closest('.chip'); if (!c) return;
   const z = c.dataset.z;
-  if (!z) cfg.zones = [];
-  else cfg.zones = cfg.zones.includes(z) ? cfg.zones.filter(x => x !== z) : [...cfg.zones, z];
-  dirty(); renderZones(); renderDevices();
+  cfg.zones = !z ? [] : cfg.zones.includes(z) ? cfg.zones.filter(x => x !== z) : [...cfg.zones, z];
+  renderPicker(); save();
 });
-
-// ---------- typer ----------
-function renderClasses() {
-  $('classes').innerHTML = CLASSES.map(c => {
-    const n = allDevices.filter(d => d.onoff && c.match(d.class)).length;
-    return `<button class="chip ${cfg.classes.includes(c.id) ? 'on' : ''}" data-c="${c.id}">${c.name}<span class="n">${n}</span></button>`;
-  }).join('');
-}
 $('classes').addEventListener('click', e => {
   const c = e.target.closest('.chip'); if (!c) return;
   const id = c.dataset.c;
   cfg.classes = cfg.classes.includes(id) ? cfg.classes.filter(x => x !== id) : [...cfg.classes, id];
-  dirty(); renderClasses(); renderDevices();
+  renderPicker(); save();
 });
-
-// ---------- enheter ----------
-function renderDevices() {
-  const q = $('search').value.trim().toLowerCase();
-  const classOk = d => CLASSES.some(c => cfg.classes.includes(c.id) && c.match(d.class));
-  const list = allDevices.filter(d => d.onoff
-    && (cfg.devices.includes(d.id) || ((cfg.zones.length === 0 || cfg.zones.includes(d.zoneId)) && classOk(d)))
-    && (!q || d.name.toLowerCase().includes(q) || d.zone.toLowerCase().includes(q)))
-    .sort((a, b) => (cfg.devices.includes(b.id) - cfg.devices.includes(a.id)) || a.name.localeCompare(b.name, 'no'));
-  $('devices').innerHTML = list.length ? list.map(d => `
-    <div class="dev">
-      <div class="ic">${d.icon ? `<img src="${esc(d.icon)}">` : '💡'}</div>
-      <div class="l"><b>${esc(d.name)}</b><small><span class="dot ${d.on ? 'on' : ''}"></span>${esc(d.zone || 'Uten rom')} · ${d.on === true ? 'på nå' : d.on === false ? 'av nå' : 'ukjent'}</small></div>
-      <button class="tg" role="switch" data-dev="${d.id}" aria-checked="${cfg.devices.includes(d.id)}"></button>
-    </div>`).join('') : '<div class="empty">Ingen enheter i valgte rom/typer.</div>';
-  $('selCount').textContent = cfg.devices.length ? `${cfg.devices.length} valgt` : '';
-}
-$('devices').addEventListener('change', e => {
-  const id = e.target.dataset.dev; if (!id) return;
-  cfg.devices = isOn(e.target) ? [...new Set([...cfg.devices, id])] : cfg.devices.filter(x => x !== id);
-  $('selCount').textContent = cfg.devices.length ? `${cfg.devices.length} valgt` : '';
+$('devices').addEventListener('click', e => {
+  const t = e.target.closest('.tg'); if (!t) return;
+  const id = t.dataset.dev;
+  cfg.devices = cfg.devices.includes(id) ? cfg.devices.filter(x => x !== id) : [...cfg.devices, id];
+  t.classList.toggle('on', cfg.devices.includes(id));
+  renderSelected(); save();
 });
-$('search').addEventListener('input', renderDevices);
-
-// ---------- øvrige innstillinger ----------
-function bindUI() {
-  setTg($('enabled'), cfg.enabled);
-  $('eveningAngle').value = cfg.eveningAngle; $('morningAngle').value = cfg.morningAngle;
-  setTg($('nbEnabled'), cfg.nightBreak.enabled); $('nbOff').value = cfg.nightBreak.off; $('nbOn').value = cfg.nightBreak.on;
-  $('luxThreshold').value = cfg.lux.threshold;
-  updateLabels();
-}
-function updateLabels() {
-  $('eveningVal').textContent = angleTxt($('eveningAngle').value);
-  $('morningVal').textContent = angleTxt($('morningAngle').value);
-  $('nbTimes').classList.toggle('hidden', !isOn($('nbEnabled')));
-  $('luxRow').classList.toggle('hidden', !$('luxDevice').value);
-  if (lastStatus) drawChart(lastStatus);
-}
-function readUI() {
-  return { ...cfg,
-    enabled: isOn($('enabled')),
-    eveningAngle: Number($('eveningAngle').value),
-    morningAngle: Number($('morningAngle').value),
-    nightBreak: { enabled: isOn($('nbEnabled')), off: $('nbOff').value || '23:30', on: $('nbOn').value || '06:00' },
-    lux: { deviceId: $('luxDevice').value || null, threshold: Number($('luxThreshold').value) || 30 },
-  };
-}
+$('search').addEventListener('input', renderPicker);
 
 async function loadDevices() {
-  [allDevices, allZones] = await Promise.all([api('GET', '/devices'), api('GET', '/zones')]);
-  renderZones(); renderClasses(); renderDevices();
+  [devices, zones] = await Promise.all([api('GET', '/devices'), api('GET', '/zones')]);
+  renderSelected();
+  if (!$('picker').classList.contains('hidden')) renderPicker();
   const sel = $('luxDevice'); sel.length = 1;
-  for (const d of allDevices.filter(d => d.lux)) {
-    const o = new Option(d.name + (d.zone ? ` (${d.zone})` : ''), d.id);
-    o.selected = cfg.lux.deviceId === d.id; sel.appendChild(o);
-  }
-  updateLabels();
+  devices.filter(d => d.lux).forEach(d => sel.appendChild(new Option(d.name, d.id, false, cfg.lux.deviceId === d.id)));
 }
 
 // ---------- graf ----------
-function drawChart(s) {
-  const W = 300, Hh = 150, min = Math.min(-20, ...s.curve) - 2, max = Math.max(20, ...s.curve) + 4;
-  const y = a => Hh - 14 - ((a - min) / (max - min)) * (Hh - 22);
-  const x = i => (i / (s.curve.length - 1)) * W;
-  const pts = s.curve.map((a, i) => `${x(i).toFixed(1)},${y(a).toFixed(1)}`).join(' ');
-  const ev = Number($('eveningAngle').value), mo = Number($('morningAngle').value);
-  const nowX = (s.nowMinutes / 1440) * W, nowY = y(s.altitude);
-  const hours = [0, 6, 12, 18, 24].map(h => `<text x="${Math.min(W - 12, Math.max(2, h / 24 * W - 6))}" y="${Hh - 3}" fill="var(--mut)" font-size="9">${String(h).padStart(2, '0')}</text>`).join('');
+function drawChart() {
+  if (!status) return;
+  const css = getComputedStyle(app), v = n => css.getPropertyValue(n).trim();
+  const W = 300, Hh = 120, c = status.curve;
+  const min = Math.min(...c, -10) - 2, max = Math.max(...c, 10) + 4;
+  const y = a => 6 + (1 - (a - min) / (max - min)) * (Hh - 22);
+  const x = i => (i / (c.length - 1)) * W;
+  const pts = c.map((a, i) => `${x(i).toFixed(1)},${y(a).toFixed(1)}`).join(' ');
+  const nowX = status.nowMinutes / 1440 * W;
+  const line = (a, col) => `<line x1="0" y1="${y(a)}" x2="${W}" y2="${y(a)}" style="stroke:${col}" stroke-width="1" stroke-dasharray="3 3"/>`;
+  const ticks = [0, 6, 12, 18].map(h => `<text x="${h / 24 * W + 3}" y="${Hh - 3}" style="fill:${v('--mut')}" font-size="9">${String(h).padStart(2, '0')}</text>`).join('');
   $('chart').innerHTML = `
     <defs>
-      <linearGradient id="day" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd27a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd27a" stop-opacity=".05"/></linearGradient>
-      <clipPath id="above"><rect x="0" y="0" width="${W}" height="${y(0)}"/></clipPath>
+      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:${v('--acc')};stop-opacity:.45"/><stop offset="1" style="stop-color:${v('--acc')};stop-opacity:.05"/></linearGradient>
+      <clipPath id="day"><rect x="0" y="0" width="${W}" height="${y(0)}"/></clipPath>
     </defs>
-    <rect width="${W}" height="${Hh}" fill="var(--soft)"/>
-    <rect x="0" y="${y(0)}" width="${W}" height="${Hh - 14 - y(0)}" fill="var(--night)" opacity=".9"/>
-    <polygon points="0,${y(0)} ${pts} ${W},${y(0)}" fill="url(#day)" clip-path="url(#above)"/>
-    <polyline points="${pts}" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linejoin="round"/>
-    <line x1="0" y1="${y(ev)}" x2="${W}" y2="${y(ev)}" stroke="#7d9bff" stroke-dasharray="4 3"/>
-    ${mo !== ev ? `<line x1="0" y1="${y(mo)}" x2="${W}" y2="${y(mo)}" stroke="#4fd69c" stroke-dasharray="4 3"/>` : ''}
-    <text x="4" y="${y(ev) + 11}" fill="#9fb4ff" font-size="8.5">tenn ${angleTxt(ev)}</text>
-    ${mo !== ev ? `<text x="${W - 58}" y="${y(mo) + 11}" fill="#6fe0b0" font-size="8.5">slukk ${angleTxt(mo)}</text>` : ''}
-    <line x1="${nowX}" y1="6" x2="${nowX}" y2="${Hh - 14}" stroke="var(--txt)" stroke-opacity=".25"/>
-    <circle cx="${nowX}" cy="${nowY}" r="5" fill="var(--acc)" stroke="#fff" stroke-width="2"/>
-    ${hours}`;
+    <rect x="0" y="0" width="${W}" height="${y(0)}" style="fill:${v('--sky')}"/>
+    <rect x="0" y="${y(0)}" width="${W}" height="${Hh - 16 - y(0)}" style="fill:${v('--night')}"/>
+    <polygon points="0,${y(0)} ${pts} ${W},${y(0)}" style="fill:url(#g)" clip-path="url(#day)"/>
+    ${line(cfg.eveningAngle, '#8aa6ff')}${cfg.morningAngle !== cfg.eveningAngle ? line(cfg.morningAngle, '#5fdca6') : ''}
+    <polyline points="${pts}" style="fill:none;stroke:${v('--acc')}" stroke-width="2.2" stroke-linejoin="round"/>
+    <line x1="${nowX}" y1="0" x2="${nowX}" y2="${Hh - 16}" style="stroke:${v('--mut')}" stroke-opacity=".5"/>
+    <circle cx="${nowX}" cy="${y(status.altitude)}" r="5" style="fill:${v('--acc')};stroke:${v('--card')}" stroke-width="2"/>
+    ${ticks}`;
 }
 
 // ---------- status ----------
 async function refreshStatus() {
   try {
-    const s = lastStatus = await api('GET', '/status'); tz = s.timezone;
-    $('pos').textContent = `📍 ${s.lat.toFixed(3)}, ${s.lng.toFixed(3)} · ${s.timezone}`;
+    status = await api('GET', '/status'); tz = status.timezone;
+    const s = status;
     $('bulb').classList.toggle('on', s.lightsOn);
+    $('bulbPath').style.fill = s.lightsOn ? '#fff' : getComputedStyle(app).getPropertyValue('--mut');
     $('stateTxt').textContent = s.pausedUntil ? `Pause til ${fmtTime(s.pausedUntil)}` : s.lightsOn ? 'Utelyset er på' : 'Utelyset er av';
-    $('sunTxt').textContent = `${s.enabled ? '' : 'Automatikk av · '}Sola ${s.altitude >= 0 ? 'står' : 'er'} ${Math.abs(s.altitude).toFixed(1)}° ${s.altitude >= 0 ? 'over' : 'under'} horisonten · ${s.dark ? 'mørkt' : 'lyst'} ute`;
+    $('sunTxt').textContent = !s.enabled ? 'Automatikken er slått av'
+      : `${s.dark ? 'Mørkt' : 'Lyst'} ute · sola ${Math.abs(s.altitude).toFixed(0)}° ${s.altitude >= 0 ? 'over' : 'under'} horisonten`;
     const nOn = s.forecast.find(e => e.on), nOff = s.forecast.find(e => !e.on);
-    $('nextOn').innerHTML = nOn ? fmtEvent(nOn.t) : '<small>ikke innen 36 t</small>';
-    $('nextOff').innerHTML = nOff ? fmtEvent(nOff.t) : '<small>ikke innen 36 t</small>';
+    $('nextOn').innerHTML = nOn ? fmtEvent(nOn.t) : '<i>ikke i dag</i>';
+    $('nextOff').innerHTML = nOff ? fmtEvent(nOff.t) : '<i>ikke i dag</i>';
     $('estLux').innerHTML = fmtLux(s.estimatedLux);
-    $('senLux').innerHTML = s.lux != null ? fmtLux(s.lux) : '<small>ingen sensor</small>';
+    $('senLux').innerHTML = s.lux != null ? fmtLux(s.lux) : '<i>ingen valgt</i>';
     $('luxNow').textContent = s.lux != null ? `Nå: ${Math.round(s.lux)} lux` : '';
-    $('log').innerHTML = s.log.length ? s.log.map(l => `<div><b>${fmtTime(l.t)}</b>${esc(l.msg)}</div>`).join('') : '<div>Ingen hendelser ennå.</div>';
-    drawChart(s);
+    $('log').innerHTML = s.log.length ? s.log.slice(0, 8).map(l => `<div class="e"><b>${fmtTime(l.t)}</b>${esc(l.msg)}</div>`).join('') : '<div class="e">Ingen hendelser ennå.</div>';
+    $('pos').textContent = `${s.lat.toFixed(3)}, ${s.lng.toFixed(3)} · ${s.timezone}`;
+    renderTimes(); drawChart();
   } catch (e) { $('stateTxt').textContent = 'Feil: ' + e.message; }
 }
 
 function onHomeyReady(Homey) {
   H = Homey;
+  applyTheme();
   Homey.get('config', async (err, saved) => {
     saved = saved || {};
     cfg = { ...DEFAULTS, ...saved, nightBreak: { ...DEFAULTS.nightBreak, ...saved.nightBreak }, lux: { ...DEFAULTS.lux, ...saved.lux } };
-    bindUI();
+    bindToggle('enabled', () => cfg.enabled, v => { cfg.enabled = v; });
+    bindToggle('nbEnabled', () => cfg.nightBreak.enabled, v => { cfg.nightBreak.enabled = v; });
+    $('nbOff').value = cfg.nightBreak.off; $('nbOn').value = cfg.nightBreak.on;
+    $('luxThreshold').value = cfg.lux.threshold;
+    renderMisc(); renderTimes();
     Homey.ready();
     await refreshStatus();
-    await loadDevices().catch(e => { $('devices').innerHTML = `<div class="empty">Kunne ikke hente enheter: ${esc(e.message)}</div>`; });
+    await loadDevices().catch(e => { $('selHint').textContent = 'Kunne ikke hente enheter: ' + e.message; });
+    if (!cfg.devices.length) $('editBtn').click();
     setInterval(refreshStatus, 30000);
   });
 
-  ['eveningAngle', 'morningAngle', 'luxDevice', 'luxThreshold', 'nbOff', 'nbOn'].forEach(id => $(id).addEventListener('input', () => { updateLabels(); dirty(); }));
-  $('nbEnabled').addEventListener('change', updateLabels);
-  document.querySelectorAll('.presets .chip').forEach(b => b.addEventListener('click', () => {
-    $(b.parentElement.dataset.target).value = b.dataset.v; updateLabels(); dirty();
-  }));
-  $('save').addEventListener('click', () => {
-    cfg = readUI();
-    Homey.set('config', cfg, err => {
-      if (err) return toast('Feil: ' + err.message, true);
-      $('save').classList.remove('dirty'); toast('Lagret ✓'); setTimeout(refreshStatus, 800);
-    });
-  });
+  $('nbOff').addEventListener('change', e => { cfg.nightBreak.off = e.target.value || '23:30'; save(); });
+  $('nbOn').addEventListener('change', e => { cfg.nightBreak.on = e.target.value || '06:00'; save(); });
+  $('luxDevice').addEventListener('change', e => { cfg.lux.deviceId = e.target.value || null; renderMisc(); save(); });
+  $('luxThreshold').addEventListener('change', e => { cfg.lux.threshold = Number(e.target.value) || 30; save(); });
   const test = on => () => {
-    if (!cfg.devices.length) return toast('Velg minst ett lys først', true);
-    Homey.set('config', readUI(), () => api('POST', '/test', { on })
-      .then(() => { toast(on ? 'Lys PÅ' : 'Lys AV'); setTimeout(() => { refreshStatus(); loadDevices(); }, 1200); })
-      .catch(e => toast(e.message, true)));
+    if (!cfg.devices.length) return toast('Velg minst ett lys først');
+    clearTimeout(saveTimer);
+    new Promise(r => H.set('config', cfg, r)).then(() => api('POST', '/test', { on })).then(() => { toast(on ? 'Slått på' : 'Slått av'); setTimeout(() => { refreshStatus(); loadDevices(); }, 1200); })
+      .catch(e => toast(e.message));
   };
   $('testOn').addEventListener('click', test(true));
   $('testOff').addEventListener('click', test(false));
