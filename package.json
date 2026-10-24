@@ -1,0 +1,6 @@
+{
+  "name": "no.kristo.utelys",
+  "version": "1.0.0",
+  "main": "app.js",
+  "dependencies": { "homey-api": "^3.0.0" }
+}

@@ -1,0 +1,250 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+  <style>
+    :root { --bg:#0f1729; --card:#18233d; --line:#26345a; --txt:#e8edf7; --mut:#8d9bbb; --acc:#ffc94d; --blue:#5b8cff; --ok:#3ecf8e; --bad:#ff6b6b; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:16px; background:var(--bg); color:var(--txt); font:15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    h1 { font-size:22px; margin:0 0 4px; }
+    .sub { color:var(--mut); margin:0 0 16px; font-size:13px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; }
+    .card h2 { font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--mut); margin:0 0 12px; }
+    .hero { display:flex; align-items:center; gap:14px; }
+    .bulb { width:54px; height:54px; border-radius:50%; display:grid; place-items:center; font-size:26px; background:#223055; transition:.3s; }
+    .bulb.on { background:var(--acc); box-shadow:0 0 28px rgba(255,201,77,.55); }
+    .hero b { font-size:18px; display:block; }
+    .hero span { color:var(--mut); font-size:13px; }
+    .next { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+    .next div { background:#1f2c4c; border-radius:12px; padding:10px 12px; }
+    .next small { color:var(--mut); display:block; font-size:12px; }
+    .next strong { font-size:20px; }
+    svg { width:100%; height:140px; display:block; margin-top:6px; }
+    .row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--line); }
+    .row:first-of-type { border-top:0; }
+    .row label { flex:1; }
+    .row small { display:block; color:var(--mut); font-size:12px; }
+    input[type=range] { width:100%; accent-color:var(--acc); }
+    input[type=time], input[type=number], select { background:#0f1729; color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:6px 8px; font:inherit; }
+    .switch { position:relative; width:46px; height:26px; flex:none; }
+    .switch input { opacity:0; width:0; height:0; }
+    .switch i { position:absolute; inset:0; background:#33416a; border-radius:26px; transition:.2s; cursor:pointer; }
+    .switch i:before { content:""; position:absolute; width:20px; height:20px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; }
+    .switch input:checked + i { background:var(--ok); }
+    .switch input:checked + i:before { transform:translateX(20px); }
+    .dev { display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line); }
+    .dev:first-child { border-top:0; }
+    .dev span { flex:1; }
+    .dev small { color:var(--mut); display:block; font-size:12px; }
+    .val { font-weight:600; color:var(--acc); min-width:70px; text-align:right; }
+    .presets { display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+    .presets button { background:#1f2c4c; color:var(--txt); border:1px solid var(--line); border-radius:999px; padding:4px 10px; font-size:12px; }
+    .btns { display:flex; gap:8px; }
+    button.main { flex:1; border:0; border-radius:12px; padding:12px; font:600 15px inherit; cursor:pointer; }
+    .save { background:var(--acc); color:#1a1300; }
+    .ghost { background:#1f2c4c; color:var(--txt); }
+    .log div { font-size:13px; padding:4px 0; color:var(--mut); }
+    .log b { color:var(--txt); font-weight:500; }
+    .toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:var(--ok); color:#002914; padding:8px 16px; border-radius:999px; opacity:0; transition:.3s; font-weight:600; }
+    .toast.show { opacity:1; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <h1>🌙 Smart utelys</h1>
+  <p class="sub" id="pos">Henter posisjon …</p>
+
+  <div class="card">
+    <div class="hero">
+      <div class="bulb" id="bulb">💡</div>
+      <div><b id="stateTxt">–</b><span id="sunTxt"></span></div>
+    </div>
+    <div class="next">
+      <div><small>Neste gang PÅ</small><strong id="nextOn">–</strong></div>
+      <div><small>Neste gang AV</small><strong id="nextOff">–</strong></div>
+    </div>
+    <svg id="chart" viewBox="0 0 300 140" preserveAspectRatio="none"></svg>
+  </div>
+
+  <div class="card">
+    <h2>Generelt</h2>
+    <div class="row"><label>Automatikk aktiv<small>Slå av for å styre lyset manuelt</small></label>
+      <span class="switch"><input type="checkbox" id="enabled"><i></i></span></div>
+  </div>
+
+  <div class="card">
+    <h2>Utelys</h2>
+    <div id="devices">Laster enheter …</div>
+  </div>
+
+  <div class="card">
+    <h2>Når skal lyset styres?</h2>
+    <div class="row"><label>Tenn om kvelden<small>Når sola er så langt under horisonten</small></label><span class="val" id="eveningVal"></span></div>
+    <input type="range" id="eveningAngle" min="-9" max="3" step="0.5">
+    <div class="presets" data-target="eveningAngle">
+      <button data-v="0">Solnedgang</button><button data-v="-3">Skumring</button><button data-v="-6">Borgerlig tusmørke</button>
+    </div>
+    <div class="row" style="margin-top:8px"><label>Slukk om morgenen<small>Når sola har steget over</small></label><span class="val" id="morningVal"></span></div>
+    <input type="range" id="morningAngle" min="-9" max="3" step="0.5">
+    <div class="presets" data-target="morningAngle">
+      <button data-v="-6">Borgerlig tusmørke</button><button data-v="-3">Grålysning</button><button data-v="0">Soloppgang</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Nattpause</h2>
+    <div class="row"><label>Slukk om natten<small>Sparer strøm – tennes igjen om morgenen hvis det fortsatt er mørkt</small></label>
+      <span class="switch"><input type="checkbox" id="nbEnabled"><i></i></span></div>
+    <div id="nbTimes">
+      <div class="row"><label>Slukk kl.</label><input type="time" id="nbOff"></div>
+      <div class="row"><label>Tenn igjen kl.</label><input type="time" id="nbOn"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Lyssensor (valgfritt)</h2>
+    <div class="row"><label>Sensor<small>Tenner tidligere på mørke, overskyede dager</small></label>
+      <select id="luxDevice"><option value="">Ingen – bruk bare sola</option></select></div>
+    <div class="row" id="luxRow"><label>Mørkt under<small id="luxNow"></small></label><span><input type="number" id="luxThreshold" min="1" max="1000" style="width:80px"> lux</span></div>
+  </div>
+
+  <div class="btns" style="margin-bottom:14px">
+    <button class="main ghost" id="testOn">Test: PÅ</button>
+    <button class="main ghost" id="testOff">Test: AV</button>
+  </div>
+  <div class="btns" style="margin-bottom:14px"><button class="main save" id="save">Lagre</button></div>
+
+  <div class="card"><h2>Logg</h2><div class="log" id="log">–</div></div>
+
+  <div class="toast" id="toast">Lagret ✓</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEFAULTS = { enabled: true, devices: [], eveningAngle: -3, morningAngle: -3,
+  nightBreak: { enabled: false, off: '23:30', on: '06:00' }, lux: { deviceId: null, threshold: 30 } };
+let H, cfg, tz;
+
+function fmt(t, withDay) {
+  const d = new Date(t);
+  const opts = { hour: '2-digit', minute: '2-digit', timeZone: tz };
+  const time = d.toLocaleTimeString('nb-NO', opts);
+  if (!withDay) return time;
+  const today = new Date().toLocaleDateString('nb-NO', { timeZone: tz });
+  return d.toLocaleDateString('nb-NO', { timeZone: tz }) === today ? time : 'i morgen ' + time;
+}
+function angleTxt(v) { v = Number(v); return (v > 0 ? '+' : '') + v.toFixed(1) + '°'; }
+function toast(msg, bad) { const t = $('toast'); t.textContent = msg; t.style.background = bad ? 'var(--bad)' : 'var(--ok)'; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1800); }
+function api(method, path, body) { return new Promise((res, rej) => H.api(method, path, body || {}, (e, r) => e ? rej(e) : res(r))); }
+
+function bindUI() {
+  $('enabled').checked = cfg.enabled;
+  $('eveningAngle').value = cfg.eveningAngle; $('morningAngle').value = cfg.morningAngle;
+  $('nbEnabled').checked = cfg.nightBreak.enabled; $('nbOff').value = cfg.nightBreak.off; $('nbOn').value = cfg.nightBreak.on;
+  $('luxThreshold').value = cfg.lux.threshold;
+  updateLabels();
+}
+function updateLabels() {
+  $('eveningVal').textContent = angleTxt($('eveningAngle').value);
+  $('morningVal').textContent = angleTxt($('morningAngle').value);
+  $('nbTimes').classList.toggle('hidden', !$('nbEnabled').checked);
+  $('luxRow').classList.toggle('hidden', !$('luxDevice').value);
+  if (window.lastStatus) drawChart(window.lastStatus);
+}
+function readUI() {
+  return {
+    enabled: $('enabled').checked,
+    devices: [...document.querySelectorAll('.devchk:checked')].map(c => c.value),
+    eveningAngle: Number($('eveningAngle').value),
+    morningAngle: Number($('morningAngle').value),
+    nightBreak: { enabled: $('nbEnabled').checked, off: $('nbOff').value || '23:30', on: $('nbOn').value || '06:00' },
+    lux: { deviceId: $('luxDevice').value || null, threshold: Number($('luxThreshold').value) || 30 },
+  };
+}
+
+async function loadDevices() {
+  const list = await api('GET', '/devices');
+  const lights = list.filter(d => d.onoff);
+  $('devices').innerHTML = lights.length ? '' : 'Fant ingen enheter som kan slås av/på.';
+  for (const d of lights) {
+    const row = document.createElement('label');
+    row.className = 'dev';
+    row.innerHTML = `<span></span><span class="switch"><input type="checkbox" class="devchk"><i></i></span>`;
+    row.children[0].innerHTML = `${d.name}<small>${d.zone}${d.on === true ? ' · på nå' : d.on === false ? ' · av nå' : ''}</small>`;
+    const chk = row.querySelector('input'); chk.value = d.id; chk.checked = cfg.devices.includes(d.id);
+    $('devices').appendChild(row);
+  }
+  for (const d of list.filter(d => d.lux)) {
+    const o = new Option(`${d.name}${d.zone ? ' (' + d.zone + ')' : ''}`, d.id);
+    if (cfg.lux.deviceId === d.id) o.selected = true;
+    $('luxDevice').appendChild(o);
+  }
+  updateLabels();
+}
+
+function drawChart(s) {
+  const W = 300, Hh = 140, min = -40, max = 60;
+  const y = a => Hh - ((Math.max(min, Math.min(max, a)) - min) / (max - min)) * Hh;
+  const x = i => (i / (s.curve.length - 1)) * W;
+  const pts = s.curve.map((a, i) => `${x(i).toFixed(1)},${y(a).toFixed(1)}`).join(' ');
+  const ev = Number($('eveningAngle').value), mo = Number($('morningAngle').value);
+  const nowX = (s.nowMinutes / 1440) * W;
+  const hours = [6, 12, 18].map(h => `<line x1="${h/24*W}" y1="0" x2="${h/24*W}" y2="${Hh}" stroke="#26345a"/><text x="${h/24*W+2}" y="${Hh-4}" fill="#8d9bbb" font-size="9">${String(h).padStart(2,'0')}</text>`).join('');
+  $('chart').innerHTML = `
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc94d" stop-opacity=".35"/><stop offset="1" stop-color="#ffc94d" stop-opacity="0"/></linearGradient></defs>
+    <rect x="0" y="${y(0)}" width="${W}" height="${Hh-y(0)}" fill="#0b1222"/>
+    ${hours}
+    <polygon points="0,${Hh} ${pts} ${W},${Hh}" fill="url(#g)"/>
+    <polyline points="${pts}" fill="none" stroke="#ffc94d" stroke-width="2"/>
+    <line x1="0" y1="${y(0)}" x2="${W}" y2="${y(0)}" stroke="#8d9bbb" stroke-dasharray="2 3"/>
+    <line x1="0" y1="${y(ev)}" x2="${W/2}" y2="${y(ev)}" stroke="#5b8cff" stroke-width="1.5"/>
+    <line x1="${W/2}" y1="${y(mo)}" x2="${W}" y2="${y(mo)}" stroke="#3ecf8e" stroke-width="1.5"/>
+    <line x1="${nowX}" y1="0" x2="${nowX}" y2="${Hh}" stroke="#fff" stroke-opacity=".6"/>
+    <text x="4" y="11" fill="#8d9bbb" font-size="9">Solhøyde i dag</text>`;
+}
+
+async function refreshStatus() {
+  try {
+    const s = await api('GET', '/status');
+    window.lastStatus = s; tz = s.timezone;
+    $('pos').textContent = `Posisjon ${s.lat.toFixed(3)}, ${s.lng.toFixed(3)} · ${s.timezone}`;
+    const on = s.wanted === true;
+    $('bulb').classList.toggle('on', on);
+    $('stateTxt').textContent = s.pausedUntil ? `Pause til ${fmt(s.pausedUntil)}` : on ? 'Utelyset er på' : 'Utelyset er av';
+    $('sunTxt').textContent = `Sola står ${s.altitude.toFixed(1)}° ${s.altitude >= 0 ? 'over' : 'under'} horisonten · ${s.dark ? 'mørkt' : 'lyst'} ute`;
+    const nOn = s.forecast.find(e => e.on), nOff = s.forecast.find(e => !e.on);
+    $('nextOn').textContent = nOn ? fmt(nOn.t, true) : 'Ikke i dag';
+    $('nextOff').textContent = nOff ? fmt(nOff.t, true) : 'Ikke i dag';
+    $('luxNow').textContent = s.lux != null ? `Nå: ${Math.round(s.lux)} lux` : '';
+    $('log').innerHTML = s.log.length ? s.log.map(l => `<div><b>${fmt(l.t, true)}</b> – ${l.msg}</div>`).join('') : 'Ingen hendelser ennå.';
+    drawChart(s);
+  } catch (e) { $('pos').textContent = 'Feil: ' + e.message; }
+}
+
+function onHomeyReady(Homey) {
+  H = Homey;
+  Homey.get('config', async (err, saved) => {
+    cfg = Object.assign({}, DEFAULTS, saved || {});
+    cfg.nightBreak = Object.assign({}, DEFAULTS.nightBreak, (saved || {}).nightBreak);
+    cfg.lux = Object.assign({}, DEFAULTS.lux, (saved || {}).lux);
+    bindUI();
+    Homey.ready();
+    await refreshStatus();
+    await loadDevices().catch(e => $('devices').textContent = 'Kunne ikke hente enheter: ' + e.message);
+    setInterval(refreshStatus, 30000);
+  });
+
+  ['eveningAngle', 'morningAngle', 'nbEnabled', 'luxDevice'].forEach(id => $(id).addEventListener('input', updateLabels));
+  document.querySelectorAll('.presets button').forEach(b => b.addEventListener('click', () => {
+    $(b.parentElement.dataset.target).value = b.dataset.v; updateLabels();
+  }));
+  $('save').addEventListener('click', () => {
+    cfg = readUI();
+    Homey.set('config', cfg, err => { if (err) return toast('Feil: ' + err.message, true); toast('Lagret ✓'); setTimeout(refreshStatus, 800); });
+  });
+  $('testOn').addEventListener('click', () => api('POST', '/test', { on: true }).then(() => toast('Lys PÅ')).catch(e => toast(e.message, true)));
+  $('testOff').addEventListener('click', () => api('POST', '/test', { on: false }).then(() => toast('Lys AV')).catch(e => toast(e.message, true)));
+}
+</script>
+</body>
+</html>

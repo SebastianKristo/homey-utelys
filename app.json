@@ -1,0 +1,39 @@
+{
+  "id": "no.kristo.utelys",
+  "version": "1.0.0",
+  "compatibility": ">=12.0.0",
+  "sdk": 3,
+  "platforms": ["local"],
+  "name": { "en": "Smart Outdoor Lights", "no": "Smart utelys" },
+  "description": { "en": "Turns outdoor lights on at dusk and off at dawn", "no": "Slår utelyset på i skumringen og av i grålysningen" },
+  "category": ["lights"],
+  "permissions": ["homey:manager:api", "homey:manager:geolocation"],
+  "images": { "small": "/assets/small.png", "large": "/assets/large.png", "xlarge": "/assets/xlarge.png" },
+  "author": { "name": "Sebastian", "email": "sebastian@kristo.no" },
+  "brandColor": "#1f3b73",
+  "api": {
+    "getDevices": { "method": "GET", "path": "/devices" },
+    "getStatus": { "method": "GET", "path": "/status" },
+    "test": { "method": "POST", "path": "/test" }
+  },
+  "flow": {
+    "triggers": [
+      {
+        "id": "lights_turned",
+        "title": { "no": "Utelyset ble slått på/av av automatikken", "en": "Outdoor lights switched by automation" },
+        "tokens": [{ "name": "on", "type": "boolean", "title": { "no": "På", "en": "On" } }]
+      }
+    ],
+    "conditions": [
+      { "id": "is_dark", "title": { "no": "Det er !{{mørkt|lyst}} ute", "en": "It is !{{dark|light}} outside" } }
+    ],
+    "actions": [
+      {
+        "id": "pause",
+        "title": { "no": "Sett automatikken på pause", "en": "Pause automation" },
+        "titleFormatted": { "no": "Sett automatikken på pause i [[minutes]] minutter", "en": "Pause automation for [[minutes]] minutes" },
+        "args": [{ "name": "minutes", "type": "number", "min": 1, "max": 1440, "placeholder": { "no": "60", "en": "60" } }]
+      }
+    ]
+  }
+}
